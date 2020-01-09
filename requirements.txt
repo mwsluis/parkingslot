@@ -1,0 +1,12 @@
+cython
+numpy
+scikit-image
+matplotlib
+opencv-python
+pandas
+imgaug
+pycocotools
+tensorflow
+keras
+ipython
+ipywidgets
