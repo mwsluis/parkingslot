@@ -57,28 +57,32 @@ def assign_next_frame(prior, post, th = 0.7, pr =False):
 
 
 def get_data():
-  PATH = "./FULL_IMAGE_1000x750/"
+  PATH = "./camerafeed/"
   image_data  =  pd.DataFrame()#[],columns=["image","path","camera","date","condition"])
   conditions = ["SUNNY" , "RAINY", "OVERCAST"]
   dates = os.listdir(PATH)
+  images = os.listdir(PATH)
+  paths = [PATH + image for image in images]
+  d = pd.DataFrame({"image": images, "path": paths})
+  image_data = image_data.append(d, ignore_index=True)
 
-  for condition in conditions :
-    date_path   = PATH+condition+"/"
-    dates  = os.listdir(date_path)
-    for date in dates : 
-      camera_path   = date_path+date+"/"
-      cameras  = os.listdir(camera_path)
-      for camera in cameras :
-        #print(camera)
-        images = os.listdir(camera_path+camera+"/")
-        paths  =  [camera_path+camera+"/" +  image for image in images]
-        d =  pd.DataFrame({"image" : images ,  "path": paths})
-        d["camera"]  = camera
-        d["date"] = date
-        d["condition"] = condition
-  #      print(d)
-        image_data = image_data.append(d, ignore_index=True)
-  image_data["camera"] = image_data["camera"].astype("category")
-  image_data["date"] = image_data["date"].astype("category")
-  image_data["condition"] = image_data["condition"].astype("category")
+  # for condition in conditions :
+  #   date_path   = PATH+condition+"/"
+  #   dates  = os.listdir(date_path)
+  #   for date in dates :
+  #     camera_path   = date_path+date+"/"
+  #     cameras  = os.listdir(camera_path)
+  #     for camera in cameras :
+  #       #print(camera)
+  #       images = os.listdir(camera_path+camera+"/")
+  #       paths  =  [camera_path+camera+"/" +  image for image in images]
+  #       d =  pd.DataFrame({"image" : images ,  "path": paths})
+  #       d["camera"]  = camera
+  #       d["date"] = date
+  #       d["condition"] = condition
+  # #      print(d)
+  #       image_data = image_data.append(d, ignore_index=True)
+  # image_data["camera"] = image_data["camera"].astype("category")
+  # image_data["date"] = image_data["date"].astype("category")
+  # image_data["condition"] = image_data["condition"].astype("category")
   return image_data

@@ -23,7 +23,7 @@ import cv2
 import pandas as pd
 import numpy as np
 import gc
-from tqdm import tqdm_notebook as tqdm
+from tqdm.notebook import tqdm as tqdm
 from datetime import datetime
 
 from mrcnn import utils
@@ -31,6 +31,7 @@ import mrcnn.model as modellib
 from mrcnn import visualize
 from utilities import assign_next_frame ,get_data
 
+OUT_FILE = "output.csv"
 ROOT_DIR = os.path.abspath("./")
 sys.path.append(ROOT_DIR)  # To find local version of the library
 sys.path.append(os.path.join(ROOT_DIR, "samples/coco/"))  # To find local version
@@ -74,13 +75,14 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 def create_boxes(images, model, verbose = 0 ,  plot = False):
   data  = pd.DataFrame()
   masks = []
-  for i in range(len(images)):
-    image = skimage.io.imread(images[i])
-    results = model.detect([image], verbose=verbose)
+  i = 1
+  for image in images:
+    image_file = skimage.io.imread(image[0])
+    results = model.detect([image_file], verbose=verbose)
     r = results[0]
     if r['rois'].shape[0] > 0 :
       if plot: 
-        visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'], 
+        visualize.display_instances(image_file, r['rois'], r['masks'], r['class_ids'],
                                   class_names, r['scores'])
       df  = pd.DataFrame(r['rois'] , columns =["y1","x1","y2","x2"])
       df["score"] = r['scores']
@@ -90,8 +92,9 @@ def create_boxes(images, model, verbose = 0 ,  plot = False):
       df = df[df["class"] ==3 ]
       masks.append(r['masks'][:,:,r['class_ids'] ==3])
       data = data.append(df, ignore_index=True)
+      i += 1
     else :
-      print(images[i], "NO BOUNDING BOX DETECTED")
+      print(image[0], "NO BOUNDING BOX DETECTED")
     
   data["xc"] = (data["x1"] + data["x2"])/2
   data["yc"] = (data["y1"] + data["y2"])/2
@@ -158,7 +161,7 @@ def look_for_slots(data,  img=[],PRUNE_TH = 3,
 #   out_boxes,  out_classes, found, labels
 # "empty":"#4a148c","occupy":"#f44336", "new":"#7cb342","del":"#80deea" 
   print("LOOKING FOR PARKING SLOTS INSIDE IMAGE FRAMES")
-  for i in  tqdm(range(1 ,n_fr)) : 
+  for i in  tqdm(range(1 ,n_fr)) :
     post =  data[data["frame"]==i].reset_index(drop=True)
     _,iou, id_map, status = assign_next_frame(slots, post, th = ASSIGN_TH)
     #print(id_map.keys(), status.sum())
@@ -213,8 +216,9 @@ def look_for_slots(data,  img=[],PRUNE_TH = 3,
       masks =  np.empty((4,4,len(df)))
       class_ids = np.array([3]*len(df))
       captions = df["captions"].tolist()
-      visualize.display_instances(cv2.imread(img[i]), 
-                   df[["y1","x1","y2","x2"]].values,\
+      path_img_to_visualize = img[i][0]
+      visualize.display_instances(cv2.imread(path_img_to_visualize),
+                   df[["y1","x1","y2","x2"]].values,
                   masks, class_ids, None,
                 scores=None, title=img[i],
                 figsize=(20, 20), ax=None,
@@ -241,23 +245,22 @@ model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 # Load weights trained on MS-COCO
 model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-for camera  in  image_data["camera"].unique():
-  images =  image_data[image_data["camera"] == camera ]["path"].values
-  images = np.sort(images)
+images =  image_data.values
+images = np.sort(images)
 
-  img_train = images[:21]
-  img_pred = images[len(images) // 2:len(images) // 2 +2]
-  park_data,masks =  create_boxes(img_train, model)
-  park_slots = look_for_slots(park_data,  img= img_train,plot =False,
-                    PRUNE_TH = 1,
-                    ASSIGN_TH =  0.6,
-                    PRUNE_STEP =  10,
-                    MERGE_STEP =  20,
-                    MERGE_TH =  0.7)
-  park_slots.drop(park_slots[park_slots["found"] < 3].index, inplace=True) 
-  park_slots=compute_distance(park_slots, images[20], th=0.2,  label ="20")
-  park_slots[['x1', 'y1', 'x2', 'y2',  'xc', 'yc', 'w' , 'b', "found"]] = park_slots[['x1', 'y1', 'x2', 'y2',  'xc', 'yc', 'w' , 'b', "found"]].astype(int)
-  park_slots= park_slots.reset_index(drop=True)
-  park_slots.to_csv("./parkings/"+camera+".csv", index = False)
+img_train = images[:21]
+img_pred = images[len(images) // 2:len(images) // 2 +2]
+park_data,masks =  create_boxes(img_train, model)
+park_slots = look_for_slots(park_data,  img= img_train,plot =False,
+                PRUNE_TH = 1,
+                ASSIGN_TH =  0.6,
+                PRUNE_STEP =  10,
+                MERGE_STEP =  20,
+                MERGE_TH =  0.7)
+park_slots.drop(park_slots[park_slots["found"] < 3].index, inplace=True)
+park_slots=compute_distance(park_slots, images[20], th=0.2,  label ="20")
+park_slots[['x1', 'y1', 'x2', 'y2',  'xc', 'yc', 'w' , 'b', "found"]] = park_slots[['x1', 'y1', 'x2', 'y2',  'xc', 'yc', 'w' , 'b', "found"]].astype(int)
+park_slots= park_slots.reset_index(drop=True)
+park_slots.to_csv(f"./parkings/{OUT_FILE}", index = False)
 
 

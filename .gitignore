@@ -1,6 +1,7 @@
 *.h5
-*.txt
+*.pyc
+*.jp*
 yolov3.weights
 ./model_data/*
-*.pyc
-./images/*
+venv/
+.idea/
