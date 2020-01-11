@@ -12,7 +12,6 @@ import os
 import sys
 import random
 import math
-import numpy as np
 import skimage.io
 import matplotlib
 import matplotlib.pyplot as plt
@@ -134,7 +133,7 @@ def compute_distance(df, image, th = 0.92, label = "Parking Slots", plot = False
     df.at[r,"found"] =  df.at[r,"found"]+ df.at[k,"found"]
     df.drop(k, axis=0, inplace = True)
   if plot :
-    visualize.display_instances(image, df[["y1","x1","y2","x2"]].values,\
+    visualize.display_instances(image, df[["y1","x1","y2","x2"]].values,
                       None, df["class"].values, class_names,
                       scores=None, title=label,
                       figsize=(16, 16), ax=None,
@@ -220,7 +219,7 @@ def look_for_slots(data,  img=[],PRUNE_TH = 3,
       visualize.display_instances(cv2.imread(path_img_to_visualize),
                    df[["y1","x1","y2","x2"]].values,
                   masks, class_ids, None,
-                scores=None, title=img[i],
+                scores=None, title=img[i][1],
                 figsize=(20, 20), ax=None,
                 show_mask=False, show_bbox=True,
                 colors=colors, 
@@ -249,7 +248,7 @@ images =  image_data.values
 images = np.sort(images)
 
 img_train = images[:21]
-img_pred = images[len(images) // 2:len(images) // 2 +2]
+# img_pred = images[len(images) // 2:len(images) // 2 +2]
 park_data,masks =  create_boxes(img_train, model)
 park_slots = look_for_slots(park_data,  img= img_train,plot =False,
                 PRUNE_TH = 1,
@@ -261,6 +260,6 @@ park_slots.drop(park_slots[park_slots["found"] < 3].index, inplace=True)
 park_slots=compute_distance(park_slots, images[20], th=0.2,  label ="20")
 park_slots[['x1', 'y1', 'x2', 'y2',  'xc', 'yc', 'w' , 'b', "found"]] = park_slots[['x1', 'y1', 'x2', 'y2',  'xc', 'yc', 'w' , 'b', "found"]].astype(int)
 park_slots= park_slots.reset_index(drop=True)
-park_slots.to_csv(f"./parkings/{OUT_FILE}", index = False)
+park_slots.to_csv(f"./{OUT_FILE}", index = False)
 
 

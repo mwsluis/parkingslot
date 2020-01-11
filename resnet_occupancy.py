@@ -1,6 +1,6 @@
 from fastai import * #get_transforms, imagenet_stats ,ClassificationInterpretation
 #from fastai.models import resnet50
-from fastai.vision import * #ImageList , cnn_learner
+from fastai.vision import *
 import pandas as pd
 import numpy as np
 
